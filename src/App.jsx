@@ -160,3 +160,22 @@ function App() {
                 <ul>
                   {Object.entries(coupleVotes).map(([key, count]) => {
                     // Resolve uids to names
+                    const [uid1, uid2] = key.split(',');
+                    const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
+                    const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
+                    return (
+                      <li key={key}>{user1.name} &amp; {user2.name}: {count} vote{count > 1 ? 's' : ''}</li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+      </main>
+      {/* ...existing code removed for simpler UI... */}
+    </div>
+  )
+}
+
+export default App
