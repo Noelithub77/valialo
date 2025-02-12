@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import Select from 'react-select'
 import './App.css'
 
 // Firebase imports remain unchanged...
@@ -20,6 +21,31 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+
+// New: custom styles for react-select
+const customStyles = {
+  control: (provided) => ({
+    ...provided,
+    backgroundColor: 'white',
+    color: 'black'
+  }),
+  singleValue: (provided) => ({
+    ...provided,
+    color: 'black'
+  }),
+  input: (provided) => ({
+    ...provided,
+    color: 'black'
+  }),
+  option: (provided, state) => ({
+    ...provided,
+    color: state.isSelected ? 'white' : 'black',
+    backgroundColor: state.isSelected ? '#2684FF' : 'white',
+    ':hover': {
+      backgroundColor: '#eee'
+    }
+  })
+};
 
 function App() {
   const [user, setUser] = useState(null)
@@ -109,6 +135,12 @@ function App() {
     }
   }, [user]);
 
+  // Map users to react-select options.
+  const userOptions = users.map(u => ({
+    value: u.uid,
+    label: `${u.name} (${u.email})`
+  }));
+
   return (
     <div className="app-container">
       <header>
@@ -128,25 +160,25 @@ function App() {
               <form onSubmit={handleVoteSubmit}>
                 <div className="dropdown-group">
                   <label>Select first user:</label>
-                  <select value={vote1} onChange={(e) => setVote1(e.target.value)}>
-                    <option value="">--Select--</option>
-                    {users.map(u => (
-                      <option key={u.uid} value={u.uid}>
-                        {u.name} ({u.email})
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    options={userOptions}
+                    value={userOptions.find(opt => opt.value === vote1)}
+                    onChange={(option) => setVote1(option ? option.value : '')}
+                    placeholder="Select first user..."
+                    isClearable
+                    styles={customStyles} // Added custom style
+                  />
                 </div>
                 <div className="dropdown-group">
                   <label>Select second user:</label>
-                  <select value={vote2} onChange={(e) => setVote2(e.target.value)}>
-                    <option value="">--Select--</option>
-                    {users.map(u => (
-                      <option key={u.uid} value={u.uid}>
-                        {u.name} ({u.email})
-                      </option>
-                    ))}
-                  </select>
+                  <Select
+                    options={userOptions}
+                    value={userOptions.find(opt => opt.value === vote2)}
+                    onChange={(option) => setVote2(option ? option.value : '')}
+                    placeholder="Select second user..."
+                    isClearable
+                    styles={customStyles} // Added custom style
+                  />
                 </div>
                 <button type="submit">Ship Them!</button>
               </form>
