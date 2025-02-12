@@ -185,6 +185,10 @@ function App() {
     { couple: ["Tom", "Zendaya"], count: 3 }
   ];
 
+  // Compute sorted votes arrays
+  const sortedHardcodedVotes = [...hardcodedVotes].sort((a, b) => b.count - a.count);
+  const sortedLiveVotes = Object.entries(coupleVotes).sort((a, b) => b[1] - a[1]);
+  
   return (
     <div className="app-container">
       <header>
@@ -234,28 +238,26 @@ function App() {
             {/* Dashboard Section with both Hardcoded and Live Votes */}
             <div className="dashboard-container">
               <h3>Couples Dashboard</h3>
-              <div className="dashboard-grid">
-                {hardcodedVotes.map((item, index) => (
+                            <div className="dashboard-grid">
+                {sortedHardcodedVotes.map((item, index) => (
                   <div key={`hard-${index}`} className="dashboard-card">
-                    <h4>{item.couple[0]} &amp; {item.couple[1]}</h4>
-                    <p>{item.count} vote{item.count > 1 ? 's' : ''}</p>
+                    <h4>{index + 1}. {item.couple[0]} &amp; {item.couple[1]} ({item.count} vote{item.count > 1 ? 's' : ''})</h4>
                   </div>
                 ))}
               </div>
               <hr />
               <h4>Live Votes</h4>
               <div className="dashboard-grid">
-                {Object.keys(coupleVotes).length === 0 ? (
+                {sortedLiveVotes.length === 0 ? (
                   <p>No live votes yet.</p>
                 ) : (
-                  Object.entries(coupleVotes).map(([key, count]) => {
+                  sortedLiveVotes.map(([key, count], index) => {
                     const [uid1, uid2] = key.split(',');
                     const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
                     const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
                     return (
                       <div key={`live-${key}`} className="dashboard-card">
-                        <h4>{user1.name} &amp; {user2.name}</h4>
-                        <p>{count} vote{count > 1 ? 's' : ''}</p>
+                        <h4>{index + 1}. {user1.name} &amp; {user2.name} ({count} vote{count > 1 ? 's' : ''})</h4>
                       </div>
                     );
                   })
