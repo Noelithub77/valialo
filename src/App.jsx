@@ -181,9 +181,9 @@ function App() {
 
   // Hardcoded dashboard data remains.
   const hardcodedVotes = [
-    { couple: ["Trump", "Elon"], count: 8 }
+    { couple: ["Trump", "Elon"], count: 8 },
     { couple: ["Boban", "Molly"], count: 5 },
-    { couple: ["Tom", "Zendaya"], count: 3 },
+    { couple: ["Tom", "Zendaya"], count: 3 }
   ];
 
   return (
