@@ -4,7 +4,6 @@ import './App.css'
 
 // Firebase imports remain unchanged...
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc } from "firebase/firestore";
 
@@ -181,7 +180,7 @@ function App() {
 
   // Hardcoded dashboard data remains.
   const hardcodedVotes = [
-    { couple: ["Trump", "Elon"], count: 8 },
+    { couple: ["Trump", "Elon"], count: 69 },
     { couple: ["Boban", "Molly"], count: 5 },
     { couple: ["Tom", "Zendaya"], count: 3 }
   ];
