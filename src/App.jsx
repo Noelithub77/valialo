@@ -5,7 +5,7 @@ import './App.css'
 // Firebase imports remain unchanged...
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc } from "firebase/firestore";
+import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3r-pauIsKxh1ZBFaMwqStQWHIiWUZD3o",
@@ -59,11 +59,6 @@ function App() {
     if(cachedUser) {
       setUser(JSON.parse(cachedUser))
     }
-    // Fetch users regardless of cached login.
-    fetchUsers();
-    if(user) {
-      fetchVotes();
-    }
     // eslint-disable-next-line
   }, []);
 
@@ -115,35 +110,33 @@ function App() {
     }
   }
 
-  const fetchUsers = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "collection"));
+  // Realtime subscription for users
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "collection"), snapshot => {
       const usersList = [];
-      querySnapshot.forEach(docSnap => {
+      snapshot.forEach(docSnap => {
         usersList.push({ uid: docSnap.id, ...docSnap.data() });
       });
       setUsers(usersList);
-    } catch (error) {
-      console.error("Error fetching users: ", error);
-    }
-  }
-  
-  // New: fetch votes and group by sorted couple key
-  const fetchVotes = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "votes"));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Realtime subscription for votes; depends on user authentication.
+  useEffect(() => {
+    if (!user) return;
+    const unsubscribeVotes = onSnapshot(collection(db, "votes"), snapshot => {
       const votesMap = {};
-      querySnapshot.forEach(docSnap => {
+      snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const couple = data.couple.slice().sort();
         const key = couple.join(',');
         votesMap[key] = (votesMap[key] || 0) + 1;
       });
       setCoupleVotes(votesMap);
-    } catch (error) {
-      console.error("Error fetching votes: ", error);
-    }
-  }
+    });
+    return () => unsubscribeVotes();
+  }, [user]);
 
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
@@ -159,18 +152,10 @@ function App() {
       alert("Vote submitted!");
       setVote1('');
       setVote2('');
-      fetchVotes(); // Refresh votes after submission
     } catch (error) {
       console.error("Error submitting vote: ", error);
     }
   }
-
-  useEffect(() => {
-    fetchUsers();
-    if(user) {
-      fetchVotes();
-    }
-  }, [user]);
 
   // Map users to react-select options.
   const userOptions = users.map(u => ({
