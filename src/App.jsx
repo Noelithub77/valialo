@@ -5,8 +5,8 @@ import './App.css'
 // Firebase imports remain unchanged...
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore, collection, setDoc, doc, getDocs, addDoc } from "firebase/firestore";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3r-pauIsKxh1ZBFaMwqStQWHIiWUZD3o",
@@ -54,6 +54,20 @@ function App() {
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})  // New state for votes overview
 
+  // On load, restore cached user if available
+  useEffect(() => {
+    const cachedUser = localStorage.getItem('valialo_user')
+    if(cachedUser) {
+      setUser(JSON.parse(cachedUser))
+    }
+    // Fetch users regardless of cached login.
+    fetchUsers();
+    if(user) {
+      fetchVotes();
+    }
+    // eslint-disable-next-line
+  }, []);
+
   const storeUserData = async (userData) => {
     try {
       await setDoc(doc(db, "collection", userData.uid), {
@@ -72,9 +86,33 @@ function App() {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
       setUser(signedInUser);
+      localStorage.setItem('valialo_user', JSON.stringify(signedInUser)) // cache login
       storeUserData(signedInUser);
     } catch (error) {
       console.error("Error during sign in: ", error);
+    }
+  }
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      localStorage.removeItem('valialo_user');
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  }
+
+  const handleUnregister = async () => {
+    if(!user) return;
+    try {
+      await deleteDoc(doc(db, "collection", user.uid));
+      await signOut(auth);
+      setUser(null);
+      localStorage.removeItem('valialo_user');
+      alert("Your account has been unregistered.");
+    } catch (error) {
+      console.error("Error unregistering: ", error);
     }
   }
 
@@ -141,6 +179,13 @@ function App() {
     label: `${u.name} (${u.email})`
   }));
 
+  // Hardcoded dashboard data remains.
+  const hardcodedVotes = [
+    { couple: ["Boban", "Molly"], count: 5 },
+    { couple: ["Charlie", "Rose"], count: 3 },
+    { couple: ["Eve", "Frank"], count: 8 }
+  ];
+
   return (
     <div className="app-container">
       <header>
@@ -156,6 +201,10 @@ function App() {
           <>
             <div className="voting-container">
               <h2>Welcome, {user.displayName}</h2>
+              <div className="user-actions">
+                <button onClick={handleLogout}>Logout</button>
+                <button onClick={handleUnregister}>Unregister</button>
+              </div>
               <p>Choose two people to ship as a couple:</p>
               <form onSubmit={handleVoteSubmit}>
                 <div className="dropdown-group">
@@ -180,27 +229,39 @@ function App() {
                     styles={customStyles} // Added custom style
                   />
                 </div>
-                <button type="submit">Ship Them!</button>
+                <button type="submit">Ship'em!</button>
               </form>
             </div>
-            {/* New: Votes Dashboard */}
+            {/* Dashboard Section with both Hardcoded and Live Votes */}
             <div className="dashboard-container">
               <h3>Couples Dashboard</h3>
-              {Object.keys(coupleVotes).length === 0 ? (
-                <p>No votes yet.</p>
-              ) : (
-                <ul>
-                  {Object.entries(coupleVotes).map(([key, count]) => {
-                    // Resolve uids to names
+              <div className="dashboard-grid">
+                {hardcodedVotes.map((item, index) => (
+                  <div key={`hard-${index}`} className="dashboard-card">
+                    <h4>{item.couple[0]} &amp; {item.couple[1]}</h4>
+                    <p>{item.count} vote{item.count > 1 ? 's' : ''}</p>
+                  </div>
+                ))}
+              </div>
+              <hr />
+              <h4>Live Votes</h4>
+              <div className="dashboard-grid">
+                {Object.keys(coupleVotes).length === 0 ? (
+                  <p>No live votes yet.</p>
+                ) : (
+                  Object.entries(coupleVotes).map(([key, count]) => {
                     const [uid1, uid2] = key.split(',');
                     const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
                     const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
                     return (
-                      <li key={key}>{user1.name} &amp; {user2.name}: {count} vote{count > 1 ? 's' : ''}</li>
+                      <div key={`live-${key}`} className="dashboard-card">
+                        <h4>{user1.name} &amp; {user2.name}</h4>
+                        <p>{count} vote{count > 1 ? 's' : ''}</p>
+                      </div>
                     );
-                  })}
-                </ul>
-              )}
+                  })
+                )}
+              </div>
             </div>
           </>
         )}
