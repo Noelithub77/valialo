@@ -73,6 +73,8 @@ function App() {
   const [userVotes, setUserVotes] = useState(0);
   const [userVotesList, setUserVotesList] = useState([]);  
 
+  const reportUrl = "https://wa.me/918848896274"; // Replace with your report link
+
   
   useEffect(() => {
     const cachedUser = localStorage.getItem('valialo_user')
@@ -288,7 +290,14 @@ function App() {
               {/* Updated: Section for votes associated with the user (ranked) */}
               {sortedUserAssociatedVotes.length > 0 && (
                 <div className="your-associated-votes">
-                  <h4>Votes Associated With You:</h4>
+                  <div className="your-associated-votes-header">
+                    <h4>Votes Associated With You:</h4>
+                    <button 
+                      className="report-button" 
+                      onClick={() => window.open(reportUrl, '_blank')}>
+                      ⚠️ Report
+                    </button>
+                  </div>
                   <ul>
                     {sortedUserAssociatedVotes.map(([key, count], index) => {
                       const [uid1, uid2] = key.split(',');

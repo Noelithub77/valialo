@@ -208,3 +208,26 @@ form {
   padding: 5px 10px;
   border-radius: 10px;
 }
+
+/* New styling for the report button */
+.report-button {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-left: auto;
+}
+.report-button:hover {
+  background-color: #c82333;
+}
+
+/* New header styling for associated votes section */
+.your-associated-votes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
