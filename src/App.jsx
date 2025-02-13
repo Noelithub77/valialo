@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import Select from 'react-select'
 import './App.css'
 
-// Firebase imports remain unchanged...
+
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
 import { getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where } from "firebase/firestore";
@@ -21,7 +21,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// New: custom styles for react-select
+
 const customStyles = {
   control: (provided) => ({
     ...provided,
@@ -58,17 +58,17 @@ function App() {
   const [users, setUsers] = useState([])
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
-  const [coupleVotes, setCoupleVotes] = useState({})  // New state for votes overview
+  const [coupleVotes, setCoupleVotes] = useState({})  
   const [userVotes, setUserVotes] = useState(0);
-  const [userVotesList, setUserVotesList] = useState([]);  // New: detailed votes by user
+  const [userVotesList, setUserVotesList] = useState([]);  
 
-  // On load, restore cached user if available
+  
   useEffect(() => {
     const cachedUser = localStorage.getItem('valialo_user')
     if(cachedUser) {
       setUser(JSON.parse(cachedUser))
     }
-    // eslint-disable-next-line
+    
   }, []);
 
   const storeUserData = async (userData) => {
@@ -88,14 +88,14 @@ function App() {
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
-      // Fallback check 
+      
       if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
         alert("Only @iiitkottayam.ac.in accounts are allowed.");
         await signOut(auth);
         return;
       }
       setUser(signedInUser);
-      localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); // cache login
+      localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); 
       storeUserData(signedInUser);
     } catch (error) {
       console.error("Error during sign in: ", error);
@@ -125,7 +125,7 @@ function App() {
     }
   }
 
-  // Realtime subscription for users
+  
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "collection"), snapshot => {
       const usersList = [];
@@ -137,7 +137,7 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Realtime subscription for votes; depends on user authentication.
+  
   useEffect(() => {
     if (!user) return;
     const unsubscribeVotes = onSnapshot(collection(db, "votes"), snapshot => {
@@ -153,7 +153,7 @@ function App() {
     return () => unsubscribeVotes();
   }, [user]);
 
-  // New: subscribe to user's vote count
+  
   useEffect(() => {
     if (!user) {
       setUserVotes(0);
@@ -166,7 +166,7 @@ function App() {
     return () => unsubscribeUserVotes();
   }, [user]);
 
-  // New: subscribe to detailed user's votes list
+  
   useEffect(() => {
     if (!user) {
       setUserVotesList([]);
@@ -206,20 +206,20 @@ function App() {
     }
   }
 
-  // Map users to react-select options.
+  
   const userOptions = users.map(u => ({
     value: u.uid,
     label: `${formatName(u.name)} (${u.email})`
   }));
 
-  // Hardcoded dashboard data remains.
+  
   const hardcodedVotes = [
     { couple: ["Trump", "Elon"], count: 69 },
     { couple: ["Boban", "Molly"], count: 5 },
     { couple: ["Tom", "Zendaya"], count: 3 }
   ];
 
-  // Compute sorted votes arrays
+  
   const sortedHardcodedVotes = [...hardcodedVotes].sort((a, b) => b.count - a.count);
   const sortedLiveVotes = Object.entries(coupleVotes).sort((a, b) => b[1] - a[1]);
   
@@ -270,7 +270,7 @@ function App() {
                     onChange={(option) => setVote1(option ? option.value : '')}
                     placeholder="Select first user..."
                     isClearable
-                    styles={customStyles} // Added custom style
+                    styles={customStyles} 
                   />
                 </div>
                 <div className="dropdown-group">
@@ -281,7 +281,7 @@ function App() {
                     onChange={(option) => setVote2(option ? option.value : '')}
                     placeholder="Select second user..."
                     isClearable
-                    styles={customStyles} // Added custom style
+                    styles={customStyles} 
                   />
                 </div>
                 <button type="submit">Ship'em!</button>
