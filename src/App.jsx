@@ -5,7 +5,7 @@ import './App.css'
 // Firebase imports remain unchanged...
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc, onSnapshot } from "firebase/firestore";
+import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc, onSnapshot, query, where } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3r-pauIsKxh1ZBFaMwqStQWHIiWUZD3o",
@@ -52,6 +52,8 @@ function App() {
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})  // New state for votes overview
+  const [userVotes, setUserVotes] = useState(0);
+  const [userVotesList, setUserVotesList] = useState([]);  // New: detailed votes by user
 
   // On load, restore cached user if available
   useEffect(() => {
@@ -144,8 +146,42 @@ function App() {
     return () => unsubscribeVotes();
   }, [user]);
 
+  // New: subscribe to user's vote count
+  useEffect(() => {
+    if (!user) {
+      setUserVotes(0);
+      return;
+    }
+    const userVotesQuery = query(collection(db, "votes"), where("voter", "==", user.uid));
+    const unsubscribeUserVotes = onSnapshot(userVotesQuery, snapshot => {
+      setUserVotes(snapshot.size);
+    });
+    return () => unsubscribeUserVotes();
+  }, [user]);
+
+  // New: subscribe to detailed user's votes list
+  useEffect(() => {
+    if (!user) {
+      setUserVotesList([]);
+      return;
+    }
+    const userVotesQuery = query(collection(db, "votes"), where("voter", "==", user.uid));
+    const unsubscribeUserVotesList = onSnapshot(userVotesQuery, snapshot => {
+      const votes = [];
+      snapshot.forEach(docSnap => {
+        votes.push(docSnap.data());
+      });
+      setUserVotesList(votes);
+    });
+    return () => unsubscribeUserVotesList();
+  }, [user]);
+
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
+    if(userVotes >= 5){
+      alert("You have reached the maximum of 5 votes.");
+      return;
+    }
     if (vote1 === vote2 || !vote1 || !vote2) {
       alert("Select two different users.");
       return;
@@ -195,6 +231,24 @@ function App() {
           <>
             <div className="voting-container">
               <h2>Welcome, {user.displayName}</h2>
+              {/* Display current vote count */}
+              <p>You have submitted {userVotes} vote{userVotes !== 1 ? 's' : ''} (max 5 allowed)</p>
+              {/* New: Display all votes submitted by the user */}
+              {userVotesList.length > 0 && (
+                <div className="user-votes-list">
+                  <h4>Your Votes:</h4>
+                  <ul>
+                    {userVotesList.map((vote, idx) => (
+                      <li key={idx}>
+                        Couple: {vote.couple.map(uid => {
+                          const matchedUser = users.find(u => u.uid === uid);
+                          return matchedUser ? matchedUser.name : uid;
+                        }).join(' & ')}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="user-actions">
                 <button onClick={handleLogout}>Logout</button>
                 <button onClick={handleUnregister}>Unregister</button>
