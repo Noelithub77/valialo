@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import Select from 'react-select'
 import './App.css'
-
-
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where } from "firebase/firestore";
+import { 
+  getAuth, signInWithPopup, GoogleAuthProvider, signOut 
+} from "firebase/auth";
+import { 
+  getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where, runTransaction 
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3r-pauIsKxh1ZBFaMwqStQWHIiWUZD3o",
@@ -20,7 +22,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
 
 const customStyles = {
   control: (provided) => ({
@@ -55,7 +56,6 @@ function toTitleCase(str) {
     .join(' ');
 }
 
-// Updated helper function: remove "-IIITK" then convert to title case
 function formatName(name) {
   if (!name) return "";
   const index = name.indexOf('-IIITK');
@@ -63,19 +63,17 @@ function formatName(name) {
   return toTitleCase(cleanName);
 }
 
+// Remove unused state: userVotes and userVotesList
 function App() {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
-  const [coupleVotes, setCoupleVotes] = useState({})  
-  
-  const [userVotes, setUserVotes] = useState(0);
-  const [userVotesList, setUserVotesList] = useState([]);  
+  const [coupleVotes, setCoupleVotes] = useState({})
+  // Removed: userVotes and userVotesList
 
-  const reportUrl = "https://wa.me/918848896274"; // Replace with your report link
-
-  const [phase, setPhase] = useState("all"); // default phase
+  const reportUrl = "https://wa.me/918848896274";
+  const [phase, setPhase] = useState("all");
 
   // New: Listen to /setting/round Firebase doc
   useEffect(() => {
@@ -105,10 +103,11 @@ function App() {
 
   const storeUserData = async (userData) => {
     try {
-      await setDoc(doc(db, "collection", userData.displayName), {
+      const cleanedName = formatName(userData.displayName);
+      await setDoc(doc(db, "users", cleanedName), {  // changed collection and document id
         email: userData.email,
-        name: userData.displayName
-      })
+        name: cleanedName
+      });
     } catch (error) {
       console.error("Error storing user data: ", error);
     }
@@ -116,16 +115,16 @@ function App() {
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
+    // provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
       
-      if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
-        alert("Only @iiitkottayam.ac.in accounts are allowed.");
-        await signOut(auth);
-        return;
-      }
+      // if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
+      //   alert("Only @iiitkottayam.ac.in accounts are allowed.");
+      //   await signOut(auth);
+      //   return;
+      // }
       setUser(signedInUser);
       localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); 
       storeUserData(signedInUser);
@@ -145,9 +144,9 @@ function App() {
   }
 
   const handleUnregister = async () => {
-    if(!user) return;
+    if (!user) return;
     try {
-      await deleteDoc(doc(db, "collection", user.uid));
+      await deleteDoc(doc(db, "users", formatName(user.displayName))); // updated collection and document id
       await signOut(auth);
       setUser(null);
       localStorage.removeItem('valialo_user');
@@ -157,78 +156,58 @@ function App() {
     }
   }
 
-  
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "collection"), snapshot => {
+    const unsubscribe = onSnapshot(collection(db, "users"), snapshot => { // updated to listen to "users"
       const usersList = [];
       snapshot.forEach(docSnap => {
-        usersList.push({ uid: docSnap.id, ...docSnap.data() });
+        usersList.push({ uid: docSnap.id, ...docSnap.data() }); 
       });
       setUsers(usersList);
     });
     return () => unsubscribe();
   }, []);
 
-  
+  // Update: votes snapshot effect now reads aggregated count from each doc
   useEffect(() => {
-    if (!user) return;
     const unsubscribeVotes = onSnapshot(collection(db, "votes"), snapshot => {
       const votesMap = {};
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
         const couple = data.couple.slice().sort();
         const key = couple.join(',');
-        votesMap[key] = (votesMap[key] || 0) + 1;
+        votesMap[key] = data.count;
       });
       setCoupleVotes(votesMap);
     });
     return () => unsubscribeVotes();
-  }, [user]);
+  }, []);
 
-  
-  useEffect(() => {
-    if (!user) {
-      setUserVotes(0);
-      return;
-    }
-    const userVotesQuery = query(collection(db, "votes"), where("voter", "==", user.uid));
-    const unsubscribeUserVotes = onSnapshot(userVotesQuery, snapshot => {
-      setUserVotes(snapshot.size);
-    });
-    return () => unsubscribeUserVotes();
-  }, [user]);
+  // Remove userVotes and userVotesList related useEffects
 
-  
-  useEffect(() => {
-    if (!user) {
-      setUserVotesList([]);
-      return;
-    }
-    const userVotesQuery = query(collection(db, "votes"), where("voter", "==", user.uid));
-    const unsubscribeUserVotesList = onSnapshot(userVotesQuery, snapshot => {
-      const votes = [];
-      snapshot.forEach(docSnap => {
-        votes.push(docSnap.data());
-      });
-      setUserVotesList(votes);
-    });
-    return () => unsubscribeUserVotesList();
-  }, [user]);
-
+  // Update vote submit handler to use aggregated vote doc
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
-    if(userVotes >= 5){
-      alert("You have reached the maximum of 5 votes.");
-      return;
-    }
     if (vote1 === vote2 || !vote1 || !vote2) {
       alert("Select two different users.");
       return;
     }
+    const firstUser = users.find(u => u.uid === vote1);
+    const secondUser = users.find(u => u.uid === vote2);
+    if (!firstUser || !secondUser) {
+      alert("Invalid vote selection.");
+      return;
+    }
+    const cleanedCouple = [formatName(firstUser.name), formatName(secondUser.name)].sort();
+    const docId = cleanedCouple.join(',');
     try {
-      await addDoc(collection(db, "votes"), {
-        voter: user.uid,
-        couple: [vote1, vote2]
+      await runTransaction(db, async (transaction) => {
+        const voteDocRef = doc(db, "votes", docId);
+        const voteDoc = await transaction.get(voteDocRef);
+        if (!voteDoc.exists()) {
+          transaction.set(voteDocRef, { couple: cleanedCouple, count: 1 });
+        } else {
+          transaction.update(voteDocRef, { count: voteDoc.data().count + 1 });
+        }
       });
       alert("Vote submitted!");
       setVote1('');
@@ -238,38 +217,33 @@ function App() {
     }
   }
 
-  
+  // Build userOptions from "users" collection remains unchanged
   const userOptions = users.map(u => ({
     value: u.uid,
     label: formatName(u.name)
   }));
 
-  
   const hardcodedVotes = [
     { couple: ["Modi", "Meloni"], count: 69 },
     { couple: ["Trump", "Elon"], count: 7 },
-    { couple: ["Boban", "Molly"], count: 5 }
+    { couple: ["Tom", "Zendaya"], count: 5 }
   ];
 
-  
   const sortedHardcodedVotes = [...hardcodedVotes].sort((a, b) => b.count - a.count);
   const sortedLiveVotes = Object.entries(coupleVotes).sort((a, b) => b[1] - a[1]);
-  
+
+  const userCleanedName = user ? formatName(user.displayName) : "";
+  // Update: filter aggregated votes by checking if the couple array (doc id) includes the user's cleaned name.
   const userAssociatedVotes = user
-    ? Object.entries(coupleVotes).filter(([key]) => key.split(',').includes(user.uid))
+    ? Object.entries(coupleVotes).filter(([key]) => key.split(',').includes(userCleanedName))
     : [];
-  
-  // New: sort the votes in descending order by count
   const sortedUserAssociatedVotes = [...userAssociatedVotes].sort((a, b) => b[1] - a[1]);
 
-  const remainingVotes = 5 - userVotes;
-  
   return (
     <div className="app-container">
       <header>
         <h1>Valentine's Day Shipping</h1>
       </header>
-      {/* New fixed corner buttons */}
       {user && (
         <>
           <div className="corner-actions-left">
@@ -288,51 +262,9 @@ function App() {
           </div>
         ) : (
           <>
-            {/* Show voting container only in voting phase or in "all" */}
             {(isVoting || isAll) && (
               <div className="voting-container">
                 <h2>Welcome, {formatName(user.displayName)}</h2>
-                {/* Updated: show remaining votes */}
-                <p>Remaining votes:- {remainingVotes}</p>
-                {userVotesList.length > 0 && (
-                  <div className="user-votes-list">
-                    <h4>Your Votes:</h4>
-                    <ul>
-                      {userVotesList.map((vote, idx) => (
-                        <li key={idx}>
-                          {vote.couple.map(uid => {
-                            const matchedUser = users.find(u => u.uid === uid);
-                            return matchedUser ? formatName(matchedUser.name) : uid;
-                          }).join(' & ')}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {sortedUserAssociatedVotes.length > 0 && (
-                  <div className="your-associated-votes">
-                    <div className="your-associated-votes-header">
-                      <h4>Votes Associated With You:</h4>
-                      <button 
-                        className="report-button" 
-                        onClick={() => window.open(reportUrl, '_blank')}>
-                        ⚠️ Report
-                      </button>
-                    </div>
-                    <ul>
-                      {sortedUserAssociatedVotes.map(([key, count], index) => {
-                        const [uid1, uid2] = key.split(',');
-                        const otherUid = uid1 === user.uid ? uid2 : uid1;
-                        const otherUser = users.find(u => u.uid === otherUid) || { name: otherUid };
-                        return (
-                          <li key={index}>
-                            {index + 1}) You &amp; {formatName(otherUser.name)}: {count} vote{count > 1 ? 's' : ''}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                )}
                 <p>Choose two people to ship as a couple:</p>
                 <form onSubmit={handleVoteSubmit}>
                   <div className="dropdown-group">
@@ -359,16 +291,38 @@ function App() {
                   </div>
                   <button type="submit">Ship'em!</button>
                 </form>
+                {sortedUserAssociatedVotes.length > 0 && (
+                  <div className="your-associated-votes">
+                    <div className="your-associated-votes-header">
+                      <h4>Votes Associated With You:</h4>
+                      <button 
+                        className="report-button" 
+                        onClick={() => window.open(reportUrl, '_blank')}>
+                        ⚠️ Report
+                      </button>
+                    </div>
+                    <ul>
+                      {sortedUserAssociatedVotes.map(([key, count], index) => {
+                        const [name1, name2] = key.split(',');
+                        const otherName = name1 === userCleanedName ? name2 : name1;
+                        return (
+                          <li key={index}>
+                            {index + 1}) You &amp; {otherName}: {count} vote{count > 1 ? 's' : ''}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
-            {/* Show dashboard container (examples or results) in registration, result or all phases */}
             {(isRegistration || isResult || isAll) && (
               <div className="dashboard-container">
                 {isRegistration ? (
                   <>
                     <p>
-                      Registration Phase: You can vote for any two registered people.
-                      Each vote counts and you are allowed up to 5 votes.
+                      Registration Phase: Get your friends registered too!!. <br></br>
+                      The voting would start shortly, you are allowed up to 5 votes.
                     </p>
                     <h3>Example:</h3>
                     <div className="dashboard-grid">
@@ -400,13 +354,11 @@ function App() {
                         <p>No live votes yet.</p>
                       ) : (
                         sortedLiveVotes.map(([key, count], index) => {
-                          const [uid1, uid2] = key.split(',');
-                          const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
-                          const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
+                          const [name1, name2] = key.split(',');
                           return (
                             <div key={`live-${key}`} className="dashboard-card">
                               <h4>
-                                {index + 1}. {formatName(user1.name)} &amp; {formatName(user2.name)} ({count} vote{count > 1 ? 's' : ''})
+                                {index + 1}. {name1} &amp; {name2} ({count} vote{count > 1 ? 's' : ''})
                               </h4>
                             </div>
                           );
@@ -420,7 +372,7 @@ function App() {
           </>
         )}
       </main>
-      {/* ...existing code removed for simpler UI... */}
+      {/* ...existing code... */}
     </div>
   )
 }
