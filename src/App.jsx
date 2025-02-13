@@ -64,11 +64,10 @@ function App() {
 
   const storeUserData = async (userData) => {
     try {
-      await setDoc(doc(db, "collection", userData.uid), {
+      await setDoc(doc(db, "collection", userData.displayName), {
         email: userData.email,
         name: userData.displayName
       })
-      fetchUsers()
     } catch (error) {
       console.error("Error storing user data: ", error);
     }
@@ -76,11 +75,18 @@ function App() {
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
+      // Fallback check 
+      if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
+        alert("Only @iiitkottayam.ac.in accounts are allowed.");
+        await signOut(auth);
+        return;
+      }
       setUser(signedInUser);
-      localStorage.setItem('valialo_user', JSON.stringify(signedInUser)) // cache login
+      localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); // cache login
       storeUserData(signedInUser);
     } catch (error) {
       console.error("Error during sign in: ", error);
