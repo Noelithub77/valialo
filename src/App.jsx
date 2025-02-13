@@ -75,7 +75,26 @@ function App() {
 
   const reportUrl = "https://wa.me/918848896274"; // Replace with your report link
 
-  
+  const [phase, setPhase] = useState("all"); // default phase
+
+  // New: Listen to /setting/round Firebase doc
+  useEffect(() => {
+    const phaseDocRef = doc(db, "setting", "round");
+    const unsubscribePhase = onSnapshot(phaseDocRef, snapshot => {
+      const data = snapshot.data();
+      if (data && data.phase) {
+        setPhase(data.phase);
+      }
+    });
+    return () => unsubscribePhase();
+  }, [db]);
+
+  // New phase flags
+  const isRegistration = phase === "registration";
+  const isVoting = phase === "voting";
+  const isResult = phase === "result";
+  const isAll = phase === "all";
+
   useEffect(() => {
     const cachedUser = localStorage.getItem('valialo_user')
     if(cachedUser) {
@@ -227,9 +246,9 @@ function App() {
 
   
   const hardcodedVotes = [
-    { couple: ["Trump", "Elon"], count: 69 },
-    { couple: ["Boban", "Molly"], count: 5 },
-    { couple: ["Modi", "Meloni"], count: 3 }
+    { couple: ["Modi", "Meloni"], count: 69 },
+    { couple: ["Trump", "Elon"], count: 7 },
+    { couple: ["Boban", "Molly"], count: 5 }
   ];
 
   
@@ -243,6 +262,8 @@ function App() {
   // New: sort the votes in descending order by count
   const sortedUserAssociatedVotes = [...userAssociatedVotes].sort((a, b) => b[1] - a[1]);
 
+  const remainingVotes = 5 - userVotes;
+  
   return (
     <div className="app-container">
       <header>
@@ -267,108 +288,135 @@ function App() {
           </div>
         ) : (
           <>
-            <div className="voting-container">
-              <h2>Welcome, {formatName(user.displayName)}</h2>
-              {/* Display current vote count */}
-              <p>You have submitted {userVotes} vote{userVotes !== 1 ? 's' : ''} (max 5 allowed)</p>
-              {/* New: Display all votes submitted by the user */}
-              {userVotesList.length > 0 && (
-                <div className="user-votes-list">
-                  <h4>Your Votes:</h4>
-                  <ul>
-                    {userVotesList.map((vote, idx) => (
-                      <li key={idx}>
-                        Couple: {vote.couple.map(uid => {
-                          const matchedUser = users.find(u => u.uid === uid);
-                          return matchedUser ? formatName(matchedUser.name) : uid;
-                        }).join(' & ')}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {/* Updated: Section for votes associated with the user (ranked) */}
-              {sortedUserAssociatedVotes.length > 0 && (
-                <div className="your-associated-votes">
-                  <div className="your-associated-votes-header">
-                    <h4>Votes Associated With You:</h4>
-                    <button 
-                      className="report-button" 
-                      onClick={() => window.open(reportUrl, '_blank')}>
-                      ⚠️ Report
-                    </button>
-                  </div>
-                  <ul>
-                    {sortedUserAssociatedVotes.map(([key, count], index) => {
-                      const [uid1, uid2] = key.split(',');
-                      // Determine the other user
-                      const otherUid = uid1 === user.uid ? uid2 : uid1;
-                      const otherUser = users.find(u => u.uid === otherUid) || { name: otherUid };
-                      return (
-                        <li key={index}>
-                          {index + 1}. You &amp; {formatName(otherUser.name)}: {count} vote{count > 1 ? 's' : ''}
+            {/* Show voting container only in voting phase or in "all" */}
+            {(isVoting || isAll) && (
+              <div className="voting-container">
+                <h2>Welcome, {formatName(user.displayName)}</h2>
+                {/* Updated: show remaining votes */}
+                <p>Remaining votes:- {remainingVotes}</p>
+                {userVotesList.length > 0 && (
+                  <div className="user-votes-list">
+                    <h4>Your Votes:</h4>
+                    <ul>
+                      {userVotesList.map((vote, idx) => (
+                        <li key={idx}>
+                          {vote.couple.map(uid => {
+                            const matchedUser = users.find(u => u.uid === uid);
+                            return matchedUser ? formatName(matchedUser.name) : uid;
+                          }).join(' & ')}
                         </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-              <p>Choose two people to ship as a couple:</p>
-              <form onSubmit={handleVoteSubmit}>
-                <div className="dropdown-group">
-                  <label>Select first user:</label>
-                  <Select
-                    options={userOptions}
-                    value={userOptions.find(opt => opt.value === vote1)}
-                    onChange={(option) => setVote1(option ? option.value : '')}
-                    placeholder="Select first user..."
-                    isClearable
-                    styles={customStyles} 
-                  />
-                </div>
-                <div className="dropdown-group">
-                  <label>Select second user:</label>
-                  <Select
-                    options={userOptions}
-                    value={userOptions.find(opt => opt.value === vote2)}
-                    onChange={(option) => setVote2(option ? option.value : '')}
-                    placeholder="Select second user..."
-                    isClearable
-                    styles={customStyles} 
-                  />
-                </div>
-                <button type="submit">Ship'em!</button>
-              </form>
-            </div>
-            {/* Dashboard Section with both Hardcoded and Live Votes */}
-            <div className="dashboard-container">
-              <h3>Example:-</h3>
-                            <div className="dashboard-grid">
-                {sortedHardcodedVotes.map((item, index) => (
-                  <div key={`hard-${index}`} className="dashboard-card">
-                    <h4>{index + 1}. {item.couple[0]} &amp; {item.couple[1]} ({item.count} vote{item.count > 1 ? 's' : ''})</h4>
+                      ))}
+                    </ul>
                   </div>
-                ))}
+                )}
+                {sortedUserAssociatedVotes.length > 0 && (
+                  <div className="your-associated-votes">
+                    <div className="your-associated-votes-header">
+                      <h4>Votes Associated With You:</h4>
+                      <button 
+                        className="report-button" 
+                        onClick={() => window.open(reportUrl, '_blank')}>
+                        ⚠️ Report
+                      </button>
+                    </div>
+                    <ul>
+                      {sortedUserAssociatedVotes.map(([key, count], index) => {
+                        const [uid1, uid2] = key.split(',');
+                        const otherUid = uid1 === user.uid ? uid2 : uid1;
+                        const otherUser = users.find(u => u.uid === otherUid) || { name: otherUid };
+                        return (
+                          <li key={index}>
+                            {index + 1}) You &amp; {formatName(otherUser.name)}: {count} vote{count > 1 ? 's' : ''}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
+                <p>Choose two people to ship as a couple:</p>
+                <form onSubmit={handleVoteSubmit}>
+                  <div className="dropdown-group">
+                    <label>Select first user:</label>
+                    <Select
+                      options={userOptions}
+                      value={userOptions.find(opt => opt.value === vote1)}
+                      onChange={(option) => setVote1(option ? option.value : '')}
+                      placeholder="Select first user..."
+                      isClearable
+                      styles={customStyles} 
+                    />
+                  </div>
+                  <div className="dropdown-group">
+                    <label>Select second user:</label>
+                    <Select
+                      options={userOptions}
+                      value={userOptions.find(opt => opt.value === vote2)}
+                      onChange={(option) => setVote2(option ? option.value : '')}
+                      placeholder="Select second user..."
+                      isClearable
+                      styles={customStyles} 
+                    />
+                  </div>
+                  <button type="submit">Ship'em!</button>
+                </form>
               </div>
-              <hr />
-              <h4>Live Votes</h4>
-              <div className="dashboard-grid">
-                {sortedLiveVotes.length === 0 ? (
-                  <p>No live votes yet.</p>
+            )}
+            {/* Show dashboard container (examples or results) in registration, result or all phases */}
+            {(isRegistration || isResult || isAll) && (
+              <div className="dashboard-container">
+                {isRegistration ? (
+                  <>
+                    <p>
+                      Registration Phase: You can vote for any two registered people.
+                      Each vote counts and you are allowed up to 5 votes.
+                    </p>
+                    <h3>Example:</h3>
+                    <div className="dashboard-grid">
+                      {sortedHardcodedVotes.map((item, index) => (
+                        <div key={`hard-${index}`} className="dashboard-card">
+                          <h4>
+                            {index + 1}. {item.couple[0]} &amp; {item.couple[1]} ({item.count} vote{item.count > 1 ? 's' : ''})
+                          </h4>
+                        </div>
+                      ))}
+                    </div>
+                  </>
                 ) : (
-                  sortedLiveVotes.map(([key, count], index) => {
-                    const [uid1, uid2] = key.split(',');
-                    const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
-                    const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
-                    return (
-                      <div key={`live-${key}`} className="dashboard-card">
-                        <h4>{index + 1}. {formatName(user1.name)} &amp; {formatName(user2.name)} ({count} vote{count > 1 ? 's' : ''})</h4>
-                      </div>
-                    );
-                  })
+                  <>
+                    <h3>Example:</h3>
+                    <div className="dashboard-grid">
+                      {sortedHardcodedVotes.map((item, index) => (
+                        <div key={`hard-${index}`} className="dashboard-card">
+                          <h4>
+                            {index + 1}. {item.couple[0]} &amp; {item.couple[1]} ({item.count} vote{item.count > 1 ? 's' : ''})
+                          </h4>
+                        </div>
+                      ))}
+                    </div>
+                    <hr />
+                    <h4>Live Votes</h4>
+                    <div className="dashboard-grid">
+                      {sortedLiveVotes.length === 0 ? (
+                        <p>No live votes yet.</p>
+                      ) : (
+                        sortedLiveVotes.map(([key, count], index) => {
+                          const [uid1, uid2] = key.split(',');
+                          const user1 = users.find(u => u.uid === uid1) || { name: uid1 };
+                          const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
+                          return (
+                            <div key={`live-${key}`} className="dashboard-card">
+                              <h4>
+                                {index + 1}. {formatName(user1.name)} &amp; {formatName(user2.name)} ({count} vote{count > 1 ? 's' : ''})
+                              </h4>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
-            </div>
+            )}
           </>
         )}
       </main>
