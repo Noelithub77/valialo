@@ -227,13 +227,20 @@ function App() {
   const hardcodedVotes = [
     { couple: ["Trump", "Elon"], count: 69 },
     { couple: ["Boban", "Molly"], count: 5 },
-    { couple: ["Tom", "Zendaya"], count: 3 }
+    { couple: ["Modi", "Meloni"], count: 3 }
   ];
 
   
   const sortedHardcodedVotes = [...hardcodedVotes].sort((a, b) => b.count - a.count);
   const sortedLiveVotes = Object.entries(coupleVotes).sort((a, b) => b[1] - a[1]);
   
+  const userAssociatedVotes = user
+    ? Object.entries(coupleVotes).filter(([key]) => key.split(',').includes(user.uid))
+    : [];
+  
+  // New: sort the votes in descending order by count
+  const sortedUserAssociatedVotes = [...userAssociatedVotes].sort((a, b) => b[1] - a[1]);
+
   return (
     <div className="app-container">
       <header>
@@ -278,6 +285,25 @@ function App() {
                   </ul>
                 </div>
               )}
+              {/* Updated: Section for votes associated with the user (ranked) */}
+              {sortedUserAssociatedVotes.length > 0 && (
+                <div className="your-associated-votes">
+                  <h4>Votes Associated With You:</h4>
+                  <ul>
+                    {sortedUserAssociatedVotes.map(([key, count], index) => {
+                      const [uid1, uid2] = key.split(',');
+                      // Determine the other user
+                      const otherUid = uid1 === user.uid ? uid2 : uid1;
+                      const otherUser = users.find(u => u.uid === otherUid) || { name: otherUid };
+                      return (
+                        <li key={index}>
+                          {index + 1}. You &amp; {formatName(otherUser.name)}: {count} vote{count > 1 ? 's' : ''}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
               <p>Choose two people to ship as a couple:</p>
               <form onSubmit={handleVoteSubmit}>
                 <div className="dropdown-group">
@@ -307,7 +333,7 @@ function App() {
             </div>
             {/* Dashboard Section with both Hardcoded and Live Votes */}
             <div className="dashboard-container">
-              <h3>Couples Dashboard</h3>
+              <h3>Example:-</h3>
                             <div className="dashboard-grid">
                 {sortedHardcodedVotes.map((item, index) => (
                   <div key={`hard-${index}`} className="dashboard-card">

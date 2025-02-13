@@ -186,3 +186,25 @@ form {
   right: 10px;
   z-index: 1000;
 }
+
+/* New styling for the votes associated with the user section */
+.your-associated-votes {
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 15px;
+  margin: 20px 0;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.your-associated-votes h4 {
+  margin-bottom: 10px;
+}
+.your-associated-votes ul {
+  list-style-type: none;
+  padding-left: 0;
+}
+.your-associated-votes li {
+  background: #ffe0e6;
+  margin-bottom: 5px;
+  padding: 5px 10px;
+  border-radius: 10px;
+}
