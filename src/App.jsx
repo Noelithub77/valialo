@@ -59,6 +59,7 @@ function App() {
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})  
+  
   const [userVotes, setUserVotes] = useState(0);
   const [userVotesList, setUserVotesList] = useState([]);  
 
@@ -228,6 +229,17 @@ function App() {
       <header>
         <h1>Valentine's Day Shipping</h1>
       </header>
+      {/* New fixed corner buttons */}
+      {user && (
+        <>
+          <div className="corner-actions-left">
+            <button onClick={handleUnregister}>Unregister</button>
+          </div>
+          <div className="corner-actions-right">
+            <button onClick={handleLogout}>Logout</button>
+          </div>
+        </>
+      )}
       <main>
         {!user ? (
           <div className="signin-container">
@@ -256,10 +268,6 @@ function App() {
                   </ul>
                 </div>
               )}
-              <div className="user-actions">
-                <button onClick={handleLogout}>Logout</button>
-                <button onClick={handleUnregister}>Unregister</button>
-              </div>
               <p>Choose two people to ship as a couple:</p>
               <form onSubmit={handleVoteSubmit}>
                 <div className="dropdown-group">
