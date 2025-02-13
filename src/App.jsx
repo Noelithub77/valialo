@@ -5,7 +5,7 @@ import './App.css'
 // Firebase imports remain unchanged...
 import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
-import { getFirestore, collection, setDoc, doc, getDocs, addDoc, deleteDoc, onSnapshot, query, where } from "firebase/firestore";
+import { getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB3r-pauIsKxh1ZBFaMwqStQWHIiWUZD3o",
