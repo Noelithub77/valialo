@@ -75,7 +75,7 @@ function App() {
   // Removed: userVotes and userVotesList
 
   const reportUrl = "https://wa.me/918848896274";
-  const [phase, setPhase] = useState("all");
+  const [phase, setPhase] = useState("registration"); 
 
   // New: Listen to /setting/round Firebase doc
   useEffect(() => {
