@@ -46,11 +46,21 @@ const customStyles = {
   })
 };
 
+// New: helper to convert string to title case
+function toTitleCase(str) {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
+// Updated helper function: remove "-IIITK" then convert to title case
 function formatName(name) {
   if (!name) return "";
   const index = name.indexOf('-IIITK');
-  return index !== -1 ? name.substring(0, index).trim() : name;
+  const cleanName = index !== -1 ? name.substring(0, index).trim() : name;
+  return toTitleCase(cleanName);
 }
 
 function App() {
@@ -210,7 +220,7 @@ function App() {
   
   const userOptions = users.map(u => ({
     value: u.uid,
-    label: `${formatName(u.name)} (${u.email})`
+    label: formatName(u.name)
   }));
 
   
