@@ -46,8 +46,9 @@ const customStyles = {
   })
 };
 
-// New: helper function to format user names
+
 function formatName(name) {
+  if (!name) return "";
   const index = name.indexOf('-IIITK');
   return index !== -1 ? name.substring(0, index).trim() : name;
 }
