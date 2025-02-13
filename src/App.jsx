@@ -46,6 +46,12 @@ const customStyles = {
   })
 };
 
+// New: helper function to format user names
+function formatName(name) {
+  const index = name.indexOf('-IIITK');
+  return index !== -1 ? name.substring(0, index).trim() : name;
+}
+
 function App() {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
@@ -202,7 +208,7 @@ function App() {
   // Map users to react-select options.
   const userOptions = users.map(u => ({
     value: u.uid,
-    label: `${u.name} (${u.email})`
+    label: `${formatName(u.name)} (${u.email})`
   }));
 
   // Hardcoded dashboard data remains.
@@ -230,7 +236,7 @@ function App() {
         ) : (
           <>
             <div className="voting-container">
-              <h2>Welcome, {user.displayName}</h2>
+              <h2>Welcome, {formatName(user.displayName)}</h2>
               {/* Display current vote count */}
               <p>You have submitted {userVotes} vote{userVotes !== 1 ? 's' : ''} (max 5 allowed)</p>
               {/* New: Display all votes submitted by the user */}
@@ -242,7 +248,7 @@ function App() {
                       <li key={idx}>
                         Couple: {vote.couple.map(uid => {
                           const matchedUser = users.find(u => u.uid === uid);
-                          return matchedUser ? matchedUser.name : uid;
+                          return matchedUser ? formatName(matchedUser.name) : uid;
                         }).join(' & ')}
                       </li>
                     ))}
@@ -302,7 +308,7 @@ function App() {
                     const user2 = users.find(u => u.uid === uid2) || { name: uid2 };
                     return (
                       <div key={`live-${key}`} className="dashboard-card">
-                        <h4>{index + 1}. {user1.name} &amp; {user2.name} ({count} vote{count > 1 ? 's' : ''})</h4>
+                        <h4>{index + 1}. {formatName(user1.name)} &amp; {formatName(user2.name)} ({count} vote{count > 1 ? 's' : ''})</h4>
                       </div>
                     );
                   })
