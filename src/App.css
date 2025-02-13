@@ -42,6 +42,10 @@
 }
 
 /* Global and container styling */
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   font-family: 'Comic Sans MS', sans-serif;
@@ -50,9 +54,18 @@ body {
 }
 
 .app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   max-width: 900px;
   margin: 0 auto;
   padding: 20px;
+  text-align: center; /* ensure all child text is centered */
+}
+
+/* Ensure main content is centered */
+main {
+  width: 100%;
 }
 
 /* Header styling with a heart pseudo-element */
