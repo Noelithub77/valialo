@@ -71,6 +71,7 @@ function App() {
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})
   const [remainingVotes, setRemainingVotes] = useState(5); // New: remaining votes state
+  const [userVotes, setUserVotes] = useState([]); // New: state to store user votes
   // Removed: userVotes and userVotesList
 
   const reportUrl = "https://wa.me/918848896274";
@@ -98,6 +99,10 @@ function App() {
     const cachedUser = localStorage.getItem('valialo_user')
     if(cachedUser) {
       setUser(JSON.parse(cachedUser))
+    }
+    const cachedUserVotes = localStorage.getItem('valialo_user_votes'); // New: load cached user votes
+    if (cachedUserVotes) {
+      setUserVotes(JSON.parse(cachedUserVotes));
     }
   }, []);
 
@@ -233,6 +238,10 @@ function App() {
         transaction.update(userDocRef, { remainingVotes: remainingVotes - 1 }); // Update remaining votes
       });
       setRemainingVotes(remainingVotes - 1); // Update UI immediately
+      const newVote = { couple: cleanedCouple }; // New: create new vote object without timestamp
+      const updatedUserVotes = [...userVotes, newVote]; // New: update user votes state
+      setUserVotes(updatedUserVotes);
+      localStorage.setItem('valialo_user_votes', JSON.stringify(updatedUserVotes)); // New: store updated user votes locally
       alert("Vote submitted!");
       setVote1('');
       setVote2('');
@@ -339,6 +348,22 @@ function App() {
                     </ul>
                   </div>
                 )}
+                <div className="your-associated-votes">
+                  <div className="your-associated-votes-header">
+                    <h4>Your Votes:</h4>  
+                  </div>
+                  {userVotes.length === 0 ? (
+                    <p>No votes cast yet.</p>
+                  ) : (
+                    <ul>
+                      {userVotes.map((vote, index) => (
+                        <li key={index}>
+                          {index + 1}. {vote.couple.join(' & ')}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </div>
             )}
             {(isRegistration || isResult || isAll) && (
