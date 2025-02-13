@@ -6,7 +6,7 @@ import {
   getAuth, signInWithPopup, GoogleAuthProvider, signOut 
 } from "firebase/auth";
 import { 
-  getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where, runTransaction 
+  getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where, runTransaction, getDoc 
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -70,6 +70,7 @@ function App() {
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})
+  const [remainingVotes, setRemainingVotes] = useState(5); // New: remaining votes state
   // Removed: userVotes and userVotesList
 
   const reportUrl = "https://wa.me/918848896274";
@@ -98,7 +99,6 @@ function App() {
     if(cachedUser) {
       setUser(JSON.parse(cachedUser))
     }
-    
   }, []);
 
   const storeUserData = async (userData) => {
@@ -106,7 +106,8 @@ function App() {
       const cleanedName = formatName(userData.displayName);
       await setDoc(doc(db, "users", cleanedName), {  // changed collection and document id
         email: userData.email,
-        name: cleanedName
+        name: cleanedName,
+        remainingVotes: 5 // New: initialize remaining votes
       });
     } catch (error) {
       console.error("Error storing user data: ", error);
@@ -182,6 +183,22 @@ function App() {
     return () => unsubscribeVotes();
   }, []);
 
+  // New: Fetch user's remaining votes once initially
+  useEffect(() => {
+    if (!user) return;
+    const fetchUserVotes = async () => {
+      const userDocRef = doc(db, "users", formatName(user.displayName));
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data && data.remainingVotes !== undefined) {
+          setRemainingVotes(data.remainingVotes);
+        }
+      }
+    };
+    fetchUserVotes();
+  }, [user]);
+
   // Remove userVotes and userVotesList related useEffects
 
   // Update vote submit handler to use aggregated vote doc
@@ -189,6 +206,10 @@ function App() {
     e.preventDefault();
     if (vote1 === vote2 || !vote1 || !vote2) {
       alert("Select two different users.");
+      return;
+    }
+    if (remainingVotes <= 0) {
+      alert("You have no remaining votes.");
       return;
     }
     const firstUser = users.find(u => u.uid === vote1);
@@ -208,7 +229,10 @@ function App() {
         } else {
           transaction.update(voteDocRef, { count: voteDoc.data().count + 1 });
         }
+        const userDocRef = doc(db, "users", formatName(user.displayName));
+        transaction.update(userDocRef, { remainingVotes: remainingVotes - 1 }); // Update remaining votes
       });
+      setRemainingVotes(remainingVotes - 1); // Update UI immediately
       alert("Vote submitted!");
       setVote1('');
       setVote2('');
@@ -266,6 +290,7 @@ function App() {
               <div className="voting-container">
                 <h2>Welcome, {formatName(user.displayName)}</h2>
                 <p>Choose two people to ship as a couple:</p>
+                <p>Remaining Votes: {remainingVotes}</p> {/* New: Display remaining votes */}
                 <form onSubmit={handleVoteSubmit}>
                   <div className="dropdown-group">
                     <label>Select first user:</label>
