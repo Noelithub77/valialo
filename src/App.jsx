@@ -47,7 +47,7 @@ const customStyles = {
   })
 };
 
-// New: helper to convert string to title case
+
 function toTitleCase(str) {
   return str
     .toLowerCase()
@@ -63,21 +63,20 @@ function formatName(name) {
   return toTitleCase(cleanName);
 }
 
-// Remove unused state: userVotes and userVotesList
 function App() {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
   const [vote1, setVote1] = useState('')
   const [vote2, setVote2] = useState('')
   const [coupleVotes, setCoupleVotes] = useState({})
-  const [remainingVotes, setRemainingVotes] = useState(5); // New: remaining votes state
-  const [userVotes, setUserVotes] = useState([]); // New: state to store user votes
-  // Removed: userVotes and userVotesList
+  const [remainingVotes, setRemainingVotes] = useState(5); 
+  const [userVotes, setUserVotes] = useState([]); 
+
 
   const reportUrl = "https://wa.me/918848896274";
   const [phase, setPhase] = useState("registration"); 
 
-  // New: Listen to /setting/round Firebase doc
+ 
   useEffect(() => {
     const phaseDocRef = doc(db, "setting", "round");
     const unsubscribePhase = onSnapshot(phaseDocRef, snapshot => {
@@ -89,7 +88,6 @@ function App() {
     return () => unsubscribePhase();
   }, [db]);
 
-  // New phase flags
   const isRegistration = phase === "registration";
   const isVoting = phase === "voting";
   const isResult = phase === "result";
@@ -100,7 +98,7 @@ function App() {
     if(cachedUser) {
       setUser(JSON.parse(cachedUser))
     }
-    const cachedUserVotes = localStorage.getItem('valialo_user_votes'); // New: load cached user votes
+    const cachedUserVotes = localStorage.getItem('valialo_user_votes');
     if (cachedUserVotes) {
       setUserVotes(JSON.parse(cachedUserVotes));
     }
@@ -109,10 +107,10 @@ function App() {
   const storeUserData = async (userData) => {
     try {
       const cleanedName = formatName(userData.displayName);
-      await setDoc(doc(db, "users", cleanedName), {  // changed collection and document id
+      await setDoc(doc(db, "users", cleanedName), {  
         email: userData.email,
         name: cleanedName,
-        remainingVotes: 5 // New: initialize remaining votes
+        remainingVotes: 5 
       });
     } catch (error) {
       console.error("Error storing user data: ", error);
@@ -152,7 +150,7 @@ function App() {
   const handleUnregister = async () => {
     if (!user) return;
     try {
-      await deleteDoc(doc(db, "users", formatName(user.displayName))); // updated collection and document id
+      await deleteDoc(doc(db, "users", formatName(user.displayName))); 
       await signOut(auth);
       setUser(null);
       localStorage.removeItem('valialo_user');
@@ -325,7 +323,7 @@ function App() {
                   </div>
                   <button type="submit">Ship'em!</button>
                 </form>
-                {sortedUserAssociatedVotes.length > 0 && (
+                {sortedUserAssociatedVotes.length > 0 ? (
                   <div className="your-associated-votes">
                     <div className="your-associated-votes-header">
                       <h4>Votes Associated With You:</h4>
@@ -346,6 +344,18 @@ function App() {
                         );
                       })}
                     </ul>
+                  </div>
+                ) : (
+                  <div className="your-associated-votes">
+                    <div className="your-associated-votes-header">
+                      <h4>Votes Associated With You:</h4>
+                      <button 
+                        className="report-button" 
+                        onClick={() => window.open(reportUrl, '_blank')}>
+                        ⚠️ Report
+                      </button>
+                    </div>
+                    <p>No votes associated with you yet. Once you receive votes, they will be displayed here.</p>
                   </div>
                 )}
                 <div className="your-associated-votes">
@@ -422,7 +432,6 @@ function App() {
           </>
         )}
       </main>
-      {/* ...existing code... */}
     </div>
   )
 }
