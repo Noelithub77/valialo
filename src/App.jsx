@@ -6,7 +6,7 @@ import {
   getAuth, signInWithPopup, GoogleAuthProvider, signOut 
 } from "firebase/auth";
 import { 
-  getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where, runTransaction, getDoc 
+  getFirestore, collection, setDoc, doc, addDoc, deleteDoc, onSnapshot, query, where, runTransaction, getDoc, getDocs 
 } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -161,35 +161,36 @@ function App() {
   }
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), snapshot => { // updated to listen to "users"
+    async function fetchUsers(){
+      const usersSnapshot = await getDocs(collection(db, "users"));
       const usersList = [];
-      snapshot.forEach(docSnap => {
-        usersList.push({ uid: docSnap.id, ...docSnap.data() }); 
+      usersSnapshot.forEach(docSnap => {
+        usersList.push({ uid: docSnap.id, ...docSnap.data() });
       });
       setUsers(usersList);
-    });
-    return () => unsubscribe();
+    }
+    fetchUsers();
   }, []);
 
-  // Update: votes snapshot effect now reads aggregated count from each doc
   useEffect(() => {
     if (!user) {
       setCoupleVotes({});
       return;
     }
-    const userCleaned = formatName(user.displayName);
-    const q = query(collection(db, "votes"), where("couple", "array-contains", userCleaned));
-    const unsubscribeAssociatedVotes = onSnapshot(q, snapshot => {
+    async function fetchVotes(){
+      const userCleaned = formatName(user.displayName);
+      const q = query(collection(db, "votes"), where("couple", "array-contains", userCleaned));
+      const querySnapshot = await getDocs(q);
       const votesMap = {};
-      snapshot.forEach(docSnap => {
+      querySnapshot.forEach(docSnap => {
         const data = docSnap.data();
         const couple = data.couple.slice().sort();
         const key = couple.join(',');
         votesMap[key] = data.count;
       });
       setCoupleVotes(votesMap);
-    });
-    return () => unsubscribeAssociatedVotes();
+    }
+    fetchVotes();
   }, [user]);
 
   // New: Fetch user's remaining votes once initially
