@@ -69,7 +69,7 @@ function App() {
   const [vote1, setVote1] = useState(null)
   const [vote2, setVote2] = useState(null)
   const [coupleVotes, setCoupleVotes] = useState({})
-  const [remainingVotes, setRemainingVotes] = useState(5); 
+  const [remainingVotes, setRemainingVotes] = useState(0); 
   const [userVotes, setUserVotes] = useState([]); 
 
 
