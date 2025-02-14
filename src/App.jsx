@@ -86,7 +86,7 @@ function App() {
       }
     });
     return () => unsubscribePhase();
-  }, [db]);
+  }, []);
 
   const isRegistration = phase === "registration";
   const isVoting = phase === "voting";
