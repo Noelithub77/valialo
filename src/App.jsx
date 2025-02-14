@@ -296,9 +296,7 @@ function App() {
       </header>
       {user && (
         <>
-          <div className="corner-actions-left">
-            <button onClick={handleUnregister}>Unregister</button>
-          </div>
+          {/* Removed unregister button */}
           <div className="corner-actions-right">
             <button onClick={handleLogout}>Logout</button>
           </div>
