@@ -66,8 +66,8 @@ function formatName(name) {
 function App() {
   const [user, setUser] = useState(null)
   const [users, setUsers] = useState([])
-  const [vote1, setVote1] = useState('')
-  const [vote2, setVote2] = useState('')
+  const [vote1, setVote1] = useState(null)
+  const [vote2, setVote2] = useState(null)
   const [coupleVotes, setCoupleVotes] = useState({})
   const [remainingVotes, setRemainingVotes] = useState(5); 
   const [userVotes, setUserVotes] = useState([]); 
@@ -119,16 +119,16 @@ function App() {
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
-    provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
+    // provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
       
-      if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
-        alert("Only @iiitkottayam.ac.in accounts are allowed.");
-        await signOut(auth);
-        return;
-      }
+      // if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
+      //   alert("Only @iiitkottayam.ac.in accounts are allowed.");
+      //   await signOut(auth);
+      //   return;
+      // }
       setUser(signedInUser);
       localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); 
       storeUserData(signedInUser);
@@ -207,14 +207,22 @@ function App() {
 
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
-    if (vote1 === vote2 || !vote1 || !vote2) {
-      alert("Select two different users.");
+    
+    // Validate user selections.
+    if (vote1 === null || vote2 === null) {
+      alert("Please select two users.");
       return;
     }
+    if (vote1 === vote2) {
+      alert("Please select two different users.");
+      return;
+    }
+    // Check if the user has any remaining votes.
     if (remainingVotes <= 0) {
-      alert("You have no remaining votes.");
+      alert("No more remaining votes.");
       return;
     }
+  
     const firstUser = users.find(u => u.uid === vote1);
     const secondUser = users.find(u => u.uid === vote2);
     if (!firstUser || !secondUser) {
@@ -223,14 +231,14 @@ function App() {
     }
     const cleanedCouple = [formatName(firstUser.name), formatName(secondUser.name)].sort();
     const docId = cleanedCouple.join(',');
-
-    // Check if the user has already voted for this couple
+  
+    // Check if the user has already voted for this couple.
     const hasVotedForCouple = userVotes.some(vote => vote.couple.join(',') === docId);
     if (hasVotedForCouple) {
       alert("You have already voted for this couple.");
       return;
     }
-
+  
     try {
       await runTransaction(db, async (transaction) => {
         const voteDocRef = doc(db, "votes", docId);
@@ -241,16 +249,14 @@ function App() {
           transaction.update(voteDocRef, { count: voteDoc.data().count + 1 });
         }
         const userDocRef = doc(db, "users", formatName(user.displayName));
-        transaction.update(userDocRef, { remainingVotes: remainingVotes - 1 }); // Update remaining votes
+        transaction.update(userDocRef, { remainingVotes: remainingVotes - 1 });
       });
-      setRemainingVotes(remainingVotes - 1); // Update UI immediately
-      const newVote = { couple: cleanedCouple }; // New: create new vote object without timestamp
-      const updatedUserVotes = [...userVotes, newVote]; // New: update user votes state
+      setRemainingVotes(remainingVotes - 1);
+      const newVote = { couple: cleanedCouple };
+      const updatedUserVotes = [...userVotes, newVote];
       setUserVotes(updatedUserVotes);
-      localStorage.setItem('valialo_user_votes', JSON.stringify(updatedUserVotes)); // New: store updated user votes locally
+      localStorage.setItem('valialo_user_votes', JSON.stringify(updatedUserVotes));
       alert("Vote submitted!");
-      setVote1('');
-      setVote2('');
     } catch (error) {
       console.error("Error submitting vote: ", error);
     }
@@ -312,7 +318,7 @@ function App() {
                     <Select
                       options={userOptions}
                       value={userOptions.find(opt => opt.value === vote1)}
-                      onChange={(option) => setVote1(option ? option.value : '')}
+                      onChange={(option) => setVote1(option ? option.value : null)}
                       placeholder="Select first user..."
                       isClearable
                       styles={customStyles} 
@@ -323,7 +329,7 @@ function App() {
                     <Select
                       options={userOptions}
                       value={userOptions.find(opt => opt.value === vote2)}
-                      onChange={(option) => setVote2(option ? option.value : '')}
+                      onChange={(option) => setVote2(option ? option.value : null)}
                       placeholder="Select second user..."
                       isClearable
                       styles={customStyles} 
