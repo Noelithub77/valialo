@@ -173,7 +173,13 @@ function App() {
 
   // Update: votes snapshot effect now reads aggregated count from each doc
   useEffect(() => {
-    const unsubscribeVotes = onSnapshot(collection(db, "votes"), snapshot => {
+    if (!user) {
+      setCoupleVotes({});
+      return;
+    }
+    const userCleaned = formatName(user.displayName);
+    const q = query(collection(db, "votes"), where("couple", "array-contains", userCleaned));
+    const unsubscribeAssociatedVotes = onSnapshot(q, snapshot => {
       const votesMap = {};
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
@@ -183,8 +189,8 @@ function App() {
       });
       setCoupleVotes(votesMap);
     });
-    return () => unsubscribeVotes();
-  }, []);
+    return () => unsubscribeAssociatedVotes();
+  }, [user]);
 
   // New: Fetch user's remaining votes once initially
   useEffect(() => {
@@ -275,8 +281,6 @@ function App() {
   ];
 
   const sortedHardcodedVotes = [...hardcodedVotes].sort((a, b) => b.count - a.count);
-  const sortedLiveVotes = Object.entries(coupleVotes).sort((a, b) => b[1] - a[1]);
-
   const userCleanedName = user ? formatName(user.displayName) : "";
   // Update: filter aggregated votes by checking if the couple array (doc id) includes the user's cleaned name.
   const userAssociatedVotes = user
@@ -420,24 +424,6 @@ function App() {
                           </h4>
                         </div>
                       ))}
-                    </div>
-                    <hr />
-                    <h4>Live Votes</h4>
-                    <div className="dashboard-grid">
-                      {sortedLiveVotes.length === 0 ? (
-                        <p>No live votes yet.</p>
-                      ) : (
-                        sortedLiveVotes.map(([key, count], index) => {
-                          const [name1, name2] = key.split(',');
-                          return (
-                            <div key={`live-${key}`} className="dashboard-card">
-                              <h4>
-                                {index + 1}. {name1} &amp; {name2} ({count} vote{count > 1 ? 's' : ''})
-                              </h4>
-                            </div>
-                          );
-                        })
-                      )}
                     </div>
                   </>
                 )}
