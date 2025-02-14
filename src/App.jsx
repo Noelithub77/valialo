@@ -204,7 +204,7 @@ function App() {
 
   // Remove userVotes and userVotesList related useEffects
 
-  // Update vote submit handler to use aggregated vote doc
+
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
     if (vote1 === vote2 || !vote1 || !vote2) {
@@ -223,6 +223,14 @@ function App() {
     }
     const cleanedCouple = [formatName(firstUser.name), formatName(secondUser.name)].sort();
     const docId = cleanedCouple.join(',');
+
+    // Check if the user has already voted for this couple
+    const hasVotedForCouple = userVotes.some(vote => vote.couple.join(',') === docId);
+    if (hasVotedForCouple) {
+      alert("You have already voted for this couple.");
+      return;
+    }
+
     try {
       await runTransaction(db, async (transaction) => {
         const voteDocRef = doc(db, "votes", docId);
