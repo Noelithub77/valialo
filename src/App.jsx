@@ -119,16 +119,16 @@ function App() {
 
   const handleGoogleSignIn = async () => {
     const provider = new GoogleAuthProvider();
-    // provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
+    provider.setCustomParameters({ hd: 'iiitkottayam.ac.in' });
     try {
       const result = await signInWithPopup(auth, provider);
       const signedInUser = result.user;
       
-      // if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
-      //   alert("Only @iiitkottayam.ac.in accounts are allowed.");
-      //   await signOut(auth);
-      //   return;
-      // }
+      if (!signedInUser.email.endsWith("@iiitkottayam.ac.in")) {
+        alert("Only @iiitkottayam.ac.in accounts are allowed.");
+        await signOut(auth);
+        return;
+      }
       setUser(signedInUser);
       localStorage.setItem('valialo_user', JSON.stringify(signedInUser)); 
       storeUserData(signedInUser);
